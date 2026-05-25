@@ -53,6 +53,14 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Backup directories
+*_bak_*/
+backups/
+tmp/
+output/
+models/*.joblib
+models/*.pkl
+
 # Keep directories but ignore content
 data/raw/.gitkeep
 data/cache/.gitkeep
