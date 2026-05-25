@@ -1,0 +1,1 @@
+def main(): return {'success': True}\nif __name__ == '__main__': main()

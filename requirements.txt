@@ -1,0 +1,10 @@
+requests
+pandas
+numpy
+sqlalchemy
+pymysql
+python-dotenv
+scikit-learn
+joblib
+yfinance
+Flask

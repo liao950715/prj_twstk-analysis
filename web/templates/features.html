@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Features - TWSTK</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">TWSTK Monitor</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/">Dashboard</a>
+                <a class="nav-link" href="/stocks">Stocks</a>
+                <a class="nav-link" href="/daily-price">Daily Price</a>
+                <a class="nav-link active" href="/features">Features</a>
+                <a class="nav-link" href="/top20">Top 20</a>
+                <a class="nav-link" href="/logs">Logs</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h1>Stock Features (Latest 200)</h1>
+        <table class="table table-sm table-striped mt-4">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Close</th>
+                    <th>Return 1D</th>
+                    <th>MA3</th>
+                    <th>MA5</th>
+                    <th>RSI7</th>
+                    <th>RSI14</th>
+                    <th>Vol Chg 3D</th>
+                    <th>Next Up</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in features %}
+                <tr>
+                    <td>{{ f.stock_id }}</td>
+                    <td>{{ f.trade_date }}</td>
+                    <td>{{ f.close_price }}</td>
+                    <td>{{ f.return_1d }}</td>
+                    <td>{{ f.ma3 }}</td>
+                    <td>{{ f.ma5 }}</td>
+                    <td>{{ f.rsi7 }}</td>
+                    <td>{{ f.rsi14 }}</td>
+                    <td>{{ f.volume_change_3d }}</td>
+                    <td>{{ f.label_next_day_up }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>台股資料系統 Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
+        .navbar { background-color: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .navbar-brand { font-size: 1.5rem; font-weight: bold; text-decoration: none; color: white; }
+        .nav-links a { color: #bdc3c7; text-decoration: none; margin-left: 1.5rem; }
+        .nav-links a:hover { color: white; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        h1, h2 { color: #2c3e50; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .card { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card-header { font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; display: flex; justify-content: space-between; }
+        .status-val { font-size: 1.8rem; font-weight: bold; color: #3498db; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; color: white; font-weight: normal; }
+        .bg-success { background-color: #27ae60; }
+        .bg-warning { background-color: #f39c12; }
+        .bg-danger { background-color: #e74c3c; }
+        .bg-secondary { background-color: #95a5a6; }
+        .progress-container { background: #eee; border-radius: 10px; height: 20px; width: 100%; margin: 1rem 0; overflow: hidden; }
+        .progress-bar { height: 100%; background: #3498db; text-align: center; color: white; line-height: 20px; font-size: 0.75rem; transition: width 0.3s; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; }
+        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #666; font-weight: 600; }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto; max-height: 300px; }
+        .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+        .alert-danger { background-color: #fdecea; color: #e74c3c; border-left: 5px solid #e74c3c; }
+        .alert-warning { background-color: #fff9eb; color: #f39c12; border-left: 5px solid #f39c12; }
+        .alert-success { background-color: #edf7ed; color: #27ae60; border-left: 5px solid #27ae60; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">台股資料系統 Dashboard</a>
+        <div class="nav-links">
+            <a href="/">首頁</a>
+            <a href="/stocks">個股清單</a>
+            <a href="/daily-price">每日股價</a>
+            <a href="/features">特徵資料</a>
+            <a href="/top20">Top 20</a>
+            <a href="/logs">系統日誌</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 1. 系統狀態總覽 -->
+        <h2>1. 系統狀態總覽</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">Stock Master</div>
+                <div class="status-val">{{ stats.stock_master_count }}</div>
+                <div style="font-size: 0.8rem; color: #666;">個股基本資料總筆數</div>
+            </div>
+            <div class="card">
+                <div class="card-header">Daily Price</div>
+                <div class="status-val">{{ stats.daily_price_count }}</div>
+                <div style="font-size: 0.8rem; color: #666;">日成交資料總筆數</div>
+            </div>
+            <div class="card">
+                <div class="card-header">Stock Features</div>
+                <div class="status-val">{{ stats.stock_features_count }}</div>
+                <div style="font-size: 0.8rem; color: #666;">特徵資料總筆數</div>
+            </div>
+            <div class="card">
+                <div class="card-header">Top 20</div>
+                <div class="status-val">{{ stats.prediction_top20_count }}</div>
+                <div style="font-size: 0.8rem; color: #666;">預測記錄總筆數</div>
+            </div>
+        </div>
+
+        <!-- 2. 14 交易日進度條 -->
+        <div class="card">
+            <div class="card-header">
+                資料蒐集進度 ({{ stats.collected_trade_days }} / 14 交易日)
+                {% if stats.is_ready %}
+                    <span class="badge bg-success">已達標</span>
+                {% else %}
+                    <span class="badge bg-warning">蒐集中</span>
+                {% endif %}
+            </div>
+            <div class="progress-container">
+                {% set pct = (stats.collected_trade_days / 14 * 100) | round %}
+                <div class="progress-bar" style="width: {{ pct if pct < 100 else 100 }}%">{{ pct }}%</div>
+            </div>
+            <p>
+                最早交易日: {{ stats.first_trade_date }} | 最新交易日: {{ stats.latest_trade_date }}<br>
+                {% if not stats.is_ready %}
+                    <strong>目前仍在資料蒐集期，尚差 {{ stats.days_to_go }} 個交易日才會正式產生 Top20。</strong>
+                {% else %}
+                    <strong>目前已達正式預測門檻。</strong>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="grid" style="margin-top: 2rem;">
+            <!-- 3. 今日更新狀態 -->
+            <div class="card">
+                <div class="card-header">今日更新狀態</div>
+                {% if stats.today_status %}
+                    <p>最新交易日: <strong>{{ stats.today_status.trade_date }}</strong></p>
+                    <p>資料筆數: {{ stats.today_status.rows_count }}</p>
+                    {% if stats.today_status.is_today %}
+                        <div class="alert alert-success">今日資料已更新</div>
+                    {% else %}
+                        <div class="alert alert-warning">今日尚未有交易資料，可能是尚未收盤、非交易日、或資料源未更新</div>
+                    {% endif %}
+                    <p style="font-size: 0.8rem; color: #666;">
+                        最早更新: {{ stats.today_status.first_updated_at }}<br>
+                        最晚更新: {{ stats.today_status.last_updated_at }}
+                    </p>
+                {% else %}
+                    <p>尚無資料</p>
+                {% endif %}
+            </div>
+
+            <!-- 6. 資料來源分布 -->
+            <div class="card">
+                <div class="card-header">資料來源分布</div>
+                <table>
+                    <thead><tr><th>來源</th><th>筆數</th></tr></thead>
+                    <tbody>
+                        {% for src, count in stats.data_source_dist.items() %}
+                        <tr><td>{{ src }}</td><td>{{ count }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5. 每日資料量表格 -->
+        <div class="card">
+            <div class="card-header">每日更新資料量 (最近 20 天)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>交易日期</th>
+                        <th>資料筆數</th>
+                        <th>最早寫入時間</th>
+                        <th>最晚更新時間</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stats.daily_vol %}
+                    <tr>
+                        <td>{{ row.trade_date }}</td>
+                        <td>{{ row.rows_count }}</td>
+                        <td>{{ row.first_created_at }}</td>
+                        <td>{{ row.last_updated_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid" style="margin-top: 2rem;">
+            <!-- 7. Feature 狀態 -->
+            <div class="card">
+                <div class="card-header">Feature 狀態</div>
+                <p>總筆數: {{ stats.feature_stats.total_rows }}</p>
+                <p>涵蓋交易日: {{ stats.feature_stats.trade_days }} 天</p>
+                <p>最新日期: {{ stats.feature_stats.latest_date }}</p>
+                <details>
+                    <summary>每日 Feature 筆數</summary>
+                    <table>
+                        <thead><tr><th>日期</th><th>筆數</th></tr></thead>
+                        <tbody>
+                            {% for row in stats.feature_daily %}
+                            <tr><td>{{ row.trade_date }}</td><td>{{ row.rows_count }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </details>
+            </div>
+
+            <!-- 8. Top20 狀態 -->
+            <div class="card">
+                <div class="card-header">最新 Top 20</div>
+                {% if stats.top20_stats.total_rows == 0 %}
+                    {% if not stats.is_ready %}
+                        <div class="alert alert-success">尚未滿 14 個交易日，Top20 尚未產生，這是正常狀態。</div>
+                    {% else %}
+                        <div class="alert alert-danger">已滿 14 個交易日但尚未產生 Top20，請檢查模型或 predict_top20.py。</div>
+                    {% endif %}
+                {% else %}
+                    <p>最新預測日期: {{ stats.top20_stats.latest_date }}</p>
+                    <table>
+                        <thead><tr><th>排名</th><th>代號</th><th>名稱</th><th>機率</th></tr></thead>
+                        <tbody>
+                            {% for row in stats.latest_top20 %}
+                            <tr>
+                                <td>{{ row.rank_no }}</td>
+                                <td>{{ row.stock_id }}</td>
+                                <td>{{ row.stock_name }}</td>
+                                <td>{{ (row.predicted_up_prob * 100) | round(2) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 9. API request 狀態 -->
+        <div class="card">
+            <div class="card-header">API Request 狀態</div>
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div>
+                    <p>FinMind 最近一小時: <strong>{{ stats.finmind_requests_last_hour }}</strong> / 550</p>
+                    {% if stats.finmind_requests_last_hour >= 500 %}
+                        <div class="badge bg-danger">警告: FinMind requests 接近上限</div>
+                    {% elif stats.finmind_requests_last_hour >= 400 %}
+                        <div class="badge bg-warning">注意: FinMind requests 較多</div>
+                    {% else %}
+                        <div class="badge bg-success">FinMind 配額正常</div>
+                    {% endif %}
+                    
+                    {% if stats.api_has_limit_errors %}
+                        <div class="badge bg-danger" style="margin-top: 0.5rem; display: inline-block;">警告: 曾出現 402/403 限流</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <table>
+                        <thead><tr><th>API</th><th>Code</th><th>Success</th><th>Count</th></tr></thead>
+                        <tbody>
+                            {% for row in stats.api_stats %}
+                            <tr>
+                                <td>{{ row.api_name }}</td>
+                                <td>{{ row.status_code }}</td>
+                                <td>{{ "V" if row.success else "X" }}</td>
+                                <td>{{ row.cnt }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. cron / app log 健康狀態 -->
+        <div class="grid" style="margin-top: 2rem;">
+            <div class="card">
+                <div class="card-header">
+                    Cron Log 健康狀態
+                    {% if not stats.cron_health.exists %}
+                        <span class="badge bg-secondary">不存在</span>
+                    {% elif stats.cron_health.has_import_error or stats.cron_health.has_error %}
+                        <span class="badge bg-danger">可能有錯誤</span>
+                    {% else %}
+                        <span class="badge bg-success">正常</span>
+                    {% endif %}
+                </div>
+                <p style="font-size: 0.8rem;">最後修改: {{ stats.cron_health.mtime }}</p>
+                {% if stats.cron_health.has_import_error %}
+                    <div class="alert alert-danger">偵測到 ImportError 或 Relative Import 錯誤！</div>
+                {% endif %}
+                <pre>{{ stats.cron_health.lines }}</pre>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    App Log 健康狀態
+                    {% if not stats.app_health.exists %}
+                        <span class="badge bg-secondary">不存在</span>
+                    {% elif stats.app_health.has_error %}
+                        <span class="badge bg-danger">可能有錯誤</span>
+                    {% else %}
+                        <span class="badge bg-success">正常</span>
+                    {% endif %}
+                </div>
+                <p style="font-size: 0.8rem;">最後修改: {{ stats.app_health.mtime }}</p>
+                {% if stats.app_health.has_error %}
+                    <div class="alert alert-warning">系統最近有錯誤，請檢查系統日誌頁面</div>
+                {% endif %}
+                <pre>{{ stats.app_health.lines }}</pre>
+            </div>
+        </div>
+
+        <!-- 11. 自我改進建議 -->
+        <div class="card">
+            <div class="card-header">自我改進建議 (Improvement Suggestions)</div>
+            {% if not stats.improvement_recent %}
+                <p>目前尚無自我改進建議。</p>
+            {% else %}
+                <div style="margin-bottom: 1rem;">
+                    {% for sev, count in stats.improvement_stats.items() %}
+                        <span class="badge {% if sev == 'CRITICAL' or sev == 'HIGH' %}bg-danger{% elif sev == 'MEDIUM' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            {{ sev }}: {{ count }}
+                        </span>
+                    {% endfor %}
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>類型</th>
+                            <th>嚴重度</th>
+                            <th>描述</th>
+                            <th>建議動作</th>
+                            <th>時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in stats.improvement_recent %}
+                        <tr>
+                            <td>{{ row.issue_type }}</td>
+                            <td>
+                                <span class="badge {% if row.severity == 'CRITICAL' or row.severity == 'HIGH' %}bg-danger{% elif row.severity == 'MEDIUM' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ row.severity }}
+                                </span>
+                            </td>
+                            <td>{{ row.description }}</td>
+                            <td>{{ row.suggested_action }}</td>
+                            <td>{{ row.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
